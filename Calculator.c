@@ -5,23 +5,32 @@
 int applyOperation(int a, int b, char op, int *divZero, int *overFlow) {
     long long result=0;
     
-    if (op == '/') {
-        if (b == 0) {
-            *divZero = 1;
+    switch (op) {
+        case '/':
+            if (b == 0) {
+                *divZero = 1;
+                return 0;
+            }
+            result = a / b;
+            break;
+
+        case '*':
+            result = (long long)a * b;
+            break;
+
+        case '+':
+            result = (long long)a + b;
+            break;
+
+        case '-':
+            result = (long long)a - b;
+            break;
+
+        default: 
+            *overFlow = 1;
             return 0;
-        }
-        result= a / b;
     }
-    else if (op == '*') 
-        result= (long long)a * b;
-        
-    else if (op == '+') 
-        result= (long long)a + b;
-        
-    else if (op == '-') {
-        result = (long long)a - b;
-    }
-    
+
     if (result > INT_MAX || result < INT_MIN) {
         *overFlow = 1;
         return 0;
@@ -45,17 +54,20 @@ int evaluateExpressions(char expression[], int *divZero, int *invalid, int *over
         }
 
         else if (expression[i] == '-' && lastWasOperator) {
-            i++;
+            i++; 
             
             if (expression[i] >= '0' && expression[i] <= '9') {
                 int value = 0;
+                
                 while (expression[i] >= '0' && expression[i] <= '9') {
                     value = value * 10 + (expression[i] - '0');
                     i++;
                 }
                 numberStack[++topNumber] = -value;
                 lastWasOperator = 0;
-            } else {
+            } 
+                
+            else {
                 *invalid = 1;
                 return 0;
             }
@@ -77,8 +89,9 @@ int evaluateExpressions(char expression[], int *divZero, int *invalid, int *over
                 char op = operatorStack[topOperator--];
                 
                 int answer = applyOperation(a, b, op, divZero,overFlow);
-                if (*divZero || *overFlow) 
+                if (*divZero || *overFlow) {
                     return 0;
+                }
                 
                 numberStack[++topNumber] = answer;
             }
@@ -114,7 +127,9 @@ int evaluateExpressions(char expression[], int *divZero, int *invalid, int *over
     
     for (int j = 0; j <= topOperator; j++) {
         result = applyOperation(result, numberStack[numIndex++], operatorStack[j], divZero, overFlow);
-        if (*divZero || *overFlow) return 0;
+        if (*divZero || *overFlow) {
+            return 0;
+        }
     }
     
     return result;
@@ -130,13 +145,18 @@ int main(){
     int divZero = 0, invalid = 0, overFlow=0;
     
     int result = evaluateExpressions(expression, &divZero, &invalid, &overFlow);
-    if(divZero) 
+    
+    if(divZero) { 
         printf("Error: Division by zero.\n");
-    else if(invalid) 
+    }
+    else if(invalid) {
         printf("Error: Invalid expression.\n");
-    else if (overFlow) 
+    }
+    else if (overFlow) {
         printf("Error: Integer overflow detected.\n");
-    else 
+    }
+    else {
         printf("Result = %d\n", result);
+    }
     return 0;
 }
