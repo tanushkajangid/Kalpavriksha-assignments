@@ -1,6 +1,6 @@
 #include<stdio.h>
 
-struct Student_Record{
+struct studentRecord{
     int rollNumber;
     char name[100];
     int marks1;
@@ -8,19 +8,33 @@ struct Student_Record{
     int marks3;
 };
 
-int isDuplicateRoll(int roll, struct Student_Record students_data[], int count) {
+int isDuplicateRoll(int roll, struct studentRecord studentsData[], int count) {
     
     for (int i = 0; i < count; i++) {
-        if (students_data[i].rollNumber == roll)
+        if (studentsData[i].rollNumber == roll)
             return 1;
     }
     return 0;
 }
 
-char Grade_Evaluator(float average_score, int *invalid_score) {
+int isInvalidMarks(struct studentRecord studentsData) {
+    return(studentsData.marks1 < 0 || studentsData.marks1 > 100 || 
+        studentsData.marks2 < 0 || studentsData.marks2 > 100 || 
+        studentsData.marks3 < 0 || studentsData.marks3 > 100);
+}
 
-    if (average_score < 0 || average_score > 100) {
-        *invalid_score = 1;
+int isInvalidTotal(int totalMarks) {
+    return (totalMarks < 0 || totalMarks > 300);
+}
+
+int isInvalidAverage(float averageMarks) {
+    return (averageMarks < 0 || averageMarks > 100);
+}
+
+char gradeEvaluator(float average_score, int *invalidScore) {
+
+    if (isInvalidAverage(average_score)) {
+        *invalidScore = 1;
         return 'X';
     }
 
@@ -46,31 +60,31 @@ char Grade_Evaluator(float average_score, int *invalid_score) {
  
 }
 
-int Total_Score(struct Student_Record students_data, int *invalid_score) {
+int calculateTotalScore(struct studentRecord studentsData, int *invalidScore) {
 
-    if (students_data.marks1 < 0 || students_data.marks1 > 100 || 
-        students_data.marks2 < 0 || students_data.marks2 > 100 || 
-        students_data.marks3< 0 || students_data.marks3 > 100) {
-        *invalid_score = 1;
+    if (isInvalidMarks(studentsData)) {
+        *invalidScore = 1;
         return -1;
     }
 
-    return students_data.marks1 + students_data.marks2 +students_data.marks3;
+    return studentsData.marks1 + studentsData.marks2 +studentsData.marks3;
 }
 
-float Average_Score(int total_score, int *invalid_score) {
-    if (total_score < 0 || total_score > 300) {
-        *invalid_score = 1;
+float calculateAverageScore(int total_score, int *invalidScore) {
+
+    if (isInvalidTotal(total_score)) {
+        *invalidScore = 1;
         return -1;
     }
+
     return total_score / 3.0;
 }
 
-void Performance_Evaluator(char grade, int *invalid_score) {
+void performanceEvaluator(char grade, int *invalidScore) {
     int stars=0;
 
     if (grade == 'X') {
-        *invalid_score = 1;
+        *invalidScore = 1;
         return ;
     }
 
@@ -97,18 +111,50 @@ void Performance_Evaluator(char grade, int *invalid_score) {
     printf("\n");
 }
 
-void PrintRollNumber(int index,int N, struct Student_Record students_data[]){
+void printRollNumber(int index,int N, struct studentRecord studentsData[]){
 
     if(index==N) {
         return;
     }
 
-    printf("%d ",students_data[index].rollNumber);
-    PrintRollNumber(index+1,N,students_data);
+    printf("%d ",studentsData[index].rollNumber);
+    printRollNumber(index+1,N,studentsData);
+}
+
+void displayStudentDetails(struct studentRecord studentsData){
+
+    int invalidScore=0;
+    int totalScore=calculateTotalScore(studentsData ,&invalidScore);
+    float averageScore=calculateAverageScore(totalScore,&invalidScore);
+    char grade=gradeEvaluator(averageScore,&invalidScore);
+
+    printf("\nRoll: %d\n",studentsData.rollNumber);
+    printf("Name: %s\n",studentsData.name);
+    printf("Total: %d\n",totalScore);
+    printf("Average: %.2f\n",averageScore);
+    printf("Grade: %c\n",grade);
+
+    if(grade=='F'){
+        return;
+    }
+
+    printf("Performance: ");
+    performanceEvaluator(grade,&invalidScore);
+    return;
+}
+
+int getStudentInput(struct studentRecord *student) {
+   
+    if (scanf("%d %s %d %d %d", &student->rollNumber, student->name, 
+        &student->marks1, &student->marks2, &student->marks3) != 5) {
+        return 1;
+    }
+    
+    return 0;
 }
 
 int main(){
-
+    
     int N;
     printf("Enter number of students: ");
 
@@ -117,26 +163,25 @@ int main(){
         return 1;
     }
 
-    struct Student_Record students_data[N];
+    struct studentRecord studentsData[N];
 
     for(int i=0;i<N;i++){
         printf("Enter Details of Student %d (Roll Number, Name, Marks1, Marks2, Marks3): ", i+1);
         
-        if(scanf("%d %s %d %d %d", &students_data[i].rollNumber,students_data[i].name,
-            &students_data[i].marks1,&students_data[i].marks2,&students_data[i].marks3)!=5 || 
-            students_data[i].rollNumber <= 0 || isDuplicateRoll(students_data[i].rollNumber, students_data, i)){
-            if (isDuplicateRoll(students_data[i].rollNumber, students_data, i)) {
-                printf("Duplicate roll number! Please enter a unique one.\n");
-            }
+        if(getStudentInput(&studentsData[i]) || studentsData[i].rollNumber <= 0 ){
             printf("Invalid input! Please enter valid details.\n");
             while(getchar() != '\n');
             i--;
             continue;
         }
+        
+        if (isDuplicateRoll(studentsData[i].rollNumber, studentsData, i)) {
+            printf("Duplicate roll number! Please enter a unique one.\n");
+            i--;
+            continue;
+        }
 
-        if (students_data[i].marks1 < 0 || students_data[i].marks1 > 100 || 
-            students_data[i].marks2 < 0 || students_data[i].marks2 > 100 || 
-            students_data[i].marks3 < 0 || students_data[i].marks3 > 100) {
+        if (isInvalidMarks(studentsData[i])) {
             printf("Invalid marks (should be 0-100). Please re-enter.\n");
             i--;
             continue;
@@ -144,28 +189,11 @@ int main(){
     }
 
     for( int i=0;i<N;i++){
-
-        int invalid_score=0;
-        int totalScore=Total_Score(students_data[i],&invalid_score);
-        float averageScore=Average_Score(totalScore,&invalid_score);
-        char grade=Grade_Evaluator(averageScore,&invalid_score);
-
-        printf("\nRoll: %d\n",students_data[i].rollNumber);
-        printf("Name: %s\n",students_data[i].name);
-        printf("Total: %d\n",totalScore);
-        printf("Average: %.2f\n",averageScore);
-        printf("Grade: %c\n",grade);
-
-        if(grade=='F'){
-            continue;
-        }
-
-        printf("Performance: ");
-        Performance_Evaluator(grade,&invalid_score);
+        displayStudentDetails(studentsData[i]);
     }
 
     printf("\nList of all Roll Numbers (via recursion): ");
-    PrintRollNumber(0,N,students_data);
+    printRollNumber(0,N,studentsData);
     printf("\n");
 
     return 0;
