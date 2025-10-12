@@ -1,5 +1,12 @@
 #include<stdio.h>
 
+const int GRADE_MAX_MARKS   = 100;
+const int GRADE_A_MIN_MARKS = 85;
+const int GRADE_B_MIN_MARKS = 70;
+const int GRADE_C_MIN_MARKS = 50;
+const int GRADE_D_MIN_MARKS = 35;
+const int GRADE_MIN_MARKS   = 0;
+
 struct studentRecord{
     int rollNumber;
     char name[100];
@@ -23,41 +30,32 @@ int isInvalidMarks(struct studentRecord studentsData) {
         studentsData.marks3 < 0 || studentsData.marks3 > 100);
 }
 
-int isInvalidTotal(int totalMarks) {
-    return (totalMarks < 0 || totalMarks > 300);
-}
+char gradeEvaluator(float averageScore, int *invalidScore) {
 
-int isInvalidAverage(float averageMarks) {
-    return (averageMarks < 0 || averageMarks > 100);
-}
-
-char gradeEvaluator(float average_score, int *invalidScore) {
-
-    if (isInvalidAverage(average_score)) {
+    if (averageScore < GRADE_MIN_MARKS || averageScore > GRADE_MAX_MARKS) {
         *invalidScore = 1;
         return 'X';
     }
 
-    if (average_score >= 85){
+    if (averageScore >= GRADE_A_MIN_MARKS){
         return 'A';
     }
     
-    else if (average_score >= 70) {
+    else if (averageScore >= GRADE_B_MIN_MARKS) {
         return 'B';
     }
 
-    else if (average_score >= 50) {
+    else if (averageScore >= GRADE_C_MIN_MARKS) {
         return 'C';
     }
 
-    else if (average_score >= 35) {
+    else if (averageScore >= GRADE_D_MIN_MARKS) {
         return 'D';
     }
 
     else{
          return 'F';
     }
- 
 }
 
 int calculateTotalScore(struct studentRecord studentsData, int *invalidScore) {
@@ -70,14 +68,14 @@ int calculateTotalScore(struct studentRecord studentsData, int *invalidScore) {
     return studentsData.marks1 + studentsData.marks2 +studentsData.marks3;
 }
 
-float calculateAverageScore(int total_score, int *invalidScore) {
+float calculateAverageScore(int totalScore, int *invalidScore) {
 
-    if (isInvalidTotal(total_score)) {
+    if (totalScore < 0 || totalScore > 300) {
         *invalidScore = 1;
         return -1;
     }
 
-    return total_score / 3.0;
+    return totalScore / 3.0;
 }
 
 void performanceEvaluator(char grade, int *invalidScore) {
@@ -140,11 +138,12 @@ void displayStudentDetails(struct studentRecord studentsData){
 
     printf("Performance: ");
     performanceEvaluator(grade,&invalidScore);
-    return;
 }
 
-int getStudentInput(struct studentRecord *student) {
+int getStudentInput(struct studentRecord *student,int index) {
    
+    printf("Enter Details of Student %d (Roll Number, Name, Marks1, Marks2, Marks3): ", index+1);
+
     if (scanf("%d %s %d %d %d", &student->rollNumber, student->name, 
         &student->marks1, &student->marks2, &student->marks3) != 5) {
         return 1;
@@ -166,9 +165,8 @@ int main(){
     struct studentRecord studentsData[N];
 
     for(int i=0;i<N;i++){
-        printf("Enter Details of Student %d (Roll Number, Name, Marks1, Marks2, Marks3): ", i+1);
         
-        if(getStudentInput(&studentsData[i]) || studentsData[i].rollNumber <= 0 ){
+        if(getStudentInput(&studentsData[i],i) || studentsData[i].rollNumber <= 0 ){
             printf("Invalid input! Please enter valid details.\n");
             while(getchar() != '\n');
             i--;
@@ -197,5 +195,5 @@ int main(){
     printf("\n");
 
     return 0;
-
+    
 }
