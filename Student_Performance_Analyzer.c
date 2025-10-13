@@ -15,10 +15,10 @@ struct studentRecord{
     int marks3;
 };
 
-int isDuplicateRoll(int roll, struct studentRecord studentsData[], int count) {
+int isDuplicateRollNumber(int newRollNumber, struct studentRecord studentsData[], int count) {
     
     for (int i = 0; i < count; i++) {
-        if (studentsData[i].rollNumber == roll)
+        if (studentsData[i].rollNumber == newRollNumber)
             return 1;
     }
     return 0;
@@ -173,7 +173,7 @@ int main(){
             continue;
         }
         
-        if (isDuplicateRoll(studentsData[i].rollNumber, studentsData, i)) {
+        if (isDuplicateRollNumber(studentsData[i].rollNumber, studentsData, i)) {
             printf("Duplicate roll number! Please enter a unique one.\n");
             i--;
             continue;
