@@ -63,7 +63,7 @@ void displayMatrixAs2DArray(int numberOfCells, int (*matrixPointer)[numberOfCell
 
 int isValidInput(int numberOfCells){
 
-    if(numberOfCells<=0){
+    if(numberOfCells<=0 || numberOfCells>20){
         return 0;
     }
     return 1;
@@ -76,13 +76,13 @@ int main(){
     printf("Enter Number Of Cells for Square Matrix : ");
     
     if(scanf("%d", &numberOfCells) != 1 || !isValidInput(numberOfCells)){
-        printf("Error: Number Of Cells Should Be A Positive Integer.\n");
+        printf("Error: Number Of Cells Should Be A Positive Integer In The Range [1,20].\n");
         return 1;
     }
 
-    int Matrix[numberOfCells][numberOfCells];
+    int matrix[numberOfCells][numberOfCells];
 
-    int (*matrixPointer)[numberOfCells]= Matrix;
+    int (*matrixPointer)[numberOfCells]= matrix;
 
     fillSpiralMatrix(numberOfCells, matrixPointer);
     displayMatrixAs2DArray(numberOfCells, matrixPointer);
