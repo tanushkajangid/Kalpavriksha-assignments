@@ -368,7 +368,7 @@ int deleteProductFromInventory(struct ProductInformation **product, int *numberO
         }
 
         else{
-            printf("\nUnable to shrink Memeory, Product Deleted! \n");
+            printf("\nUnable to shrink Memory, Product Deleted! \n");
         }
 
     }
