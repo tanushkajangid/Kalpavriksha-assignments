@@ -51,7 +51,7 @@ int isNameValid(char productName[]){
 
     for(int index = 0; productName[index] !='\0'; index++){
 
-        if(!isalpha(productName[index])){
+        if(!isalpha(productName[index]) && productName[index] != '_' && productName[index] != '-'){
             return 1;
         }
     }
@@ -174,6 +174,7 @@ int updateQuantity(struct ProductInformation *product, int numberOfProducts){
 
     printf("\nEnter Product ID to update quantity: ");
     int searchId;
+    int found = 0;
 
     if(scanf("%d", &searchId) != 1 || isIdValid(searchId)){
         printf("Error: Invalid Input for Product ID \n");
@@ -190,12 +191,20 @@ int updateQuantity(struct ProductInformation *product, int numberOfProducts){
 
     for(int index = 0; index < numberOfProducts; index++){
         if(product[index].productId == searchId){
+            found = 1;
             product[index].productQuantity = newQuantity;
             break;
         }
     }
 
-    printf("Quantity updated successfully!\n");
+    if(!found){
+        printf("\nNo Product Found With ID: %d !",searchId);
+    }
+    
+    else{
+        printf("Quantity updated successfully!\n");
+    }
+
     return 0;
     
 }
@@ -359,7 +368,7 @@ int deleteProductFromInventory(struct ProductInformation **product, int *numberO
         }
 
         else{
-            printf("\nUnable to shrik Memeory, Product Deleted! \n");
+            printf("\nUnable to shrink Memeory, Product Deleted! \n");
         }
 
     }
@@ -464,4 +473,5 @@ int main(){
     inventoryMenu(&inventory, &numberOfProducts);
 
     return 0;
+
 }
