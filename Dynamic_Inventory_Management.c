@@ -2,35 +2,35 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#define MAX_PRODUCTS 100
+#define MAX_INITIAL_PRODUCTS 100
 #define MAX_NAME_LENGTH 50
 #define MAX_ID 10000
 #define MAX_PRICE 100000
 #define MAX_QUANTITY 1000000
 #define MIN_VALUE 0
 
-struct ProductInformation
+struct ProductInformation        
 {
-    int productId;
-    char productName[MAX_NAME_LENGTH];
-    float productPrice;
-    int productQuantity;
+    int id;
+    char name[MAX_NAME_LENGTH];
+    float price;
+    int quantity;
 };
 
 int isProductNumberValid(int numberOfProducts){
 
-    if(numberOfProducts <= MIN_VALUE || numberOfProducts > MAX_PRODUCTS){
+    if(numberOfProducts <= MIN_VALUE || numberOfProducts > MAX_INITIAL_PRODUCTS){
         return 1;
     }
 
     return 0;
 }
 
-int isIdUnique(struct ProductInformation *products, int currentIndexValue, int IdToCheck){
+int isIdUnique(struct ProductInformation *product, int currentIndexValue, int IdToCheck){
 
     for(int index = 0; index < currentIndexValue; index++){
 
-        if(products[index].productId == IdToCheck){
+        if(product[index].id == IdToCheck){
             return 1;
         }
     }
@@ -38,20 +38,20 @@ int isIdUnique(struct ProductInformation *products, int currentIndexValue, int I
     return 0;
 }
 
-int isIdValid(int productId){
+int isIdValid(int id){
 
-    if(productId <= MIN_VALUE || productId > MAX_ID){
+    if(id <= MIN_VALUE || id > MAX_ID){
         return 1;
     }
 
     return 0;
 }
 
-int isNameValid(char productName[]){
+int isNameValid(char name[]){
 
-    for(int index = 0; productName[index] !='\0'; index++){
+    for(int index = 0; name[index] !='\0'; index++){
 
-        if(!isalpha(productName[index]) && productName[index] != '_' && productName[index] != '-'){
+        if(!isalpha(name[index]) && name[index] != '_' && name[index] != '-'){
             return 1;
         }
     }
@@ -59,25 +59,25 @@ int isNameValid(char productName[]){
     return 0;
 }
 
-int isPriceValid(float productPrice){
+int isPriceValid(float price){
 
-    if(productPrice < MIN_VALUE || productPrice > MAX_PRICE){
+    if(price < MIN_VALUE || price > MAX_PRICE){
         return 1;
     }
 
     return 0;
 }
 
-int isQuantityValid(int productQuantity){
+int isQuantityValid(int quantity){
 
-    if(productQuantity < MIN_VALUE || productQuantity > MAX_QUANTITY){
+    if(quantity < MIN_VALUE || quantity > MAX_QUANTITY){
         return 1;
     }
 
     return 0;
 }
 
-int inputSingleProduct(struct ProductInformation *product, int currentCount, int index){
+void inputSingleProduct(struct ProductInformation *product, int currentCount, int index){
 
     do{
 
@@ -85,20 +85,20 @@ int inputSingleProduct(struct ProductInformation *product, int currentCount, int
 
         printf("\nProduct ID: ");
 
-        if(scanf("%d", &product[index].productId) != 1 || product[index].productId <= MIN_VALUE || product[index].productId > MAX_ID){
+        if(scanf("%d", &product[index].id) != 1 || product[index].id <= MIN_VALUE || product[index].id > MAX_ID){
             printf("Error: Invalid Input for Product ID \n");
             while(getchar() != '\n');
             continue;
         }
         
-        if(isIdUnique(product, currentCount, product[index].productId)){
+        if(isIdUnique(product, currentCount, product[index].id)){
             printf("\nError: ID already  exist! Enter Unique ID\n");
             continue;
         }
 
         printf("Product Name: ");
 
-        if(scanf("%s", product[index].productName) !=1 || isNameValid(product[index].productName)){
+        if(scanf("%s", product[index].name) !=1 || isNameValid(product[index].name)){
             printf("Error: Invalid Input for Product Name \n");
             while(getchar() != '\n');
             continue;
@@ -106,7 +106,7 @@ int inputSingleProduct(struct ProductInformation *product, int currentCount, int
 
         printf("Product Price: ");
 
-        if(scanf("%f", &product[index].productPrice) != 1 || isPriceValid(product[index].productPrice)){
+        if(scanf("%f", &product[index].price) != 1 || isPriceValid(product[index].price)){
             printf("Error: Invalid Input for Product Price\n");
             while(getchar() != '\n');
             continue;
@@ -114,7 +114,7 @@ int inputSingleProduct(struct ProductInformation *product, int currentCount, int
 
         printf("Product Quantity: ");
 
-        if(scanf("%d", &product[index].productQuantity) != 1 || isQuantityValid(product[index].productQuantity)){
+        if(scanf("%d", &product[index].quantity) != 1 || isQuantityValid(product[index].quantity)){
             printf("Error: Invalid Input for Product Quantity \n");
             while(getchar() != '\n');
             continue;
@@ -124,7 +124,6 @@ int inputSingleProduct(struct ProductInformation *product, int currentCount, int
 
     } while(1);
 
-    return 0;
 }
 
 int getInputForProductDetails(struct ProductInformation *product, int numberOfProducts){
@@ -137,14 +136,14 @@ int getInputForProductDetails(struct ProductInformation *product, int numberOfPr
     return 0; 
 }
 
-int addNewProductToInventory(struct ProductInformation **product, int *numberOfProducts){
+void addNewProductToInventory(struct ProductInformation **product, int *numberOfProducts){
 
     int newIndex = *numberOfProducts;
     struct ProductInformation *newProduct = realloc(*product, (newIndex + 1) * sizeof(struct ProductInformation));
 
     if (newProduct == NULL) {
         printf("Memory allocation failed!\n");
-        return 1;
+        return;
     }
 
     *product = newProduct;
@@ -154,23 +153,21 @@ int addNewProductToInventory(struct ProductInformation **product, int *numberOfP
     (*numberOfProducts)++;
 
     printf("Product added successfully! \n");
-    return 0;
 
 }
 
-int viewAllProducts(struct ProductInformation *product, int numberOfProducts){
+void viewAllProducts(struct ProductInformation *product, int numberOfProducts){
 
     printf("\n========= PRODUCT LIST =========\n");
 
     for(int index = 0; index < numberOfProducts; index++){
         printf("Product ID: %d | Name: %s | Price: %.2f | Quantity: %d\n", 
-        product[index].productId, product[index].productName, product[index].productPrice, product[index].productQuantity);
+        product[index].id, product[index].name, product[index].price, product[index].quantity);
     }
 
-    return 0;
 }
 
-int updateQuantity(struct ProductInformation *product, int numberOfProducts){
+void updateQuantity(struct ProductInformation *product, int numberOfProducts){
 
     printf("\nEnter Product ID to update quantity: ");
     int searchId;
@@ -178,7 +175,7 @@ int updateQuantity(struct ProductInformation *product, int numberOfProducts){
 
     if(scanf("%d", &searchId) != 1 || isIdValid(searchId)){
         printf("Error: Invalid Input for Product ID \n");
-        return 1;
+        return;
     }
 
     printf("\nEnter new Quantity: ");
@@ -186,13 +183,13 @@ int updateQuantity(struct ProductInformation *product, int numberOfProducts){
     
     if(scanf("%d", &newQuantity) != 1 || isQuantityValid(newQuantity)){
         printf("Error: Invalid Input for Product Quantity \n");
-        return 1;
+        return;
     }
 
     for(int index = 0; index < numberOfProducts; index++){
-        if(product[index].productId == searchId){
+        if(product[index].id == searchId){
             found = 1;
-            product[index].productQuantity = newQuantity;
+            product[index].quantity = newQuantity;
             break;
         }
     }
@@ -204,36 +201,28 @@ int updateQuantity(struct ProductInformation *product, int numberOfProducts){
     else{
         printf("Quantity updated successfully!\n");
     }
-
-    return 0;
     
 }
 
-int searchProductById(struct ProductInformation *product, int numberOfProducts){
+void printProductDetails( struct ProductInformation *product, int indexFoundAt){
 
-    printf("\nEnter Product ID to search: ");
-    int searchId;
-    int found = 0;
+    printf("Product ID: %d | Name: %s | Price: %.2f | Quantity: %d\n", 
+            product[indexFoundAt].id, product[indexFoundAt].name, product[indexFoundAt].price, product[indexFoundAt].quantity);
+}
 
-    if(scanf("%d", &searchId) != 1 || isIdValid(searchId)){
-        printf("\nError: Invalid Input for Product ID \n");
-        return 1;
-    }
+int searchProductById(struct ProductInformation *product, int numberOfProducts, int searchId){
+
+    int indexFoundAt = -1;
 
     for(int index = 0; index < numberOfProducts; index++){
-        if(product[index].productId == searchId){
-            found = 1;
-            printf("Products Found: ");
-            printf("Product ID: %d | Name: %s | Price: %.2f | Quantity: %d\n", 
-            product[index].productId, product[index].productName, product[index].productPrice, product[index].productQuantity);
+
+        if(product[index].id == searchId){
+            indexFoundAt = index;
+            break;
         }
     }
 
-    if(!found){
-        printf("\nNo Product Found With ID: %d !",searchId);
-    }
-
-    return 0;
+    return indexFoundAt;
 }
 
 int matchPartialName(const char *nameToSearch, const char *productNames){
@@ -258,11 +247,12 @@ int matchPartialName(const char *nameToSearch, const char *productNames){
     return 0;
 }
 
-int searchProductByName(struct ProductInformation *product, int numberOfProducts){
+int searchProductByName(struct ProductInformation *product, int numberOfProducts, int foundIndices[]){
 
     printf("\nEnter Product Name to search: ");
     char nameToSearch[MAX_NAME_LENGTH];
-    int found = 0;
+
+    int indexCount = 0;
 
     if(scanf("%s", nameToSearch) != 1 || isNameValid(nameToSearch)){
         printf("\nError: Invalid Input for Product Name \n");
@@ -271,29 +261,20 @@ int searchProductByName(struct ProductInformation *product, int numberOfProducts
 
     for(int index = 0; index < numberOfProducts; index++){
 
-        if( matchPartialName (nameToSearch, product[index].productName)){
-
-            found = 1;
-            printf("\nProducts Found: ");
-
-            printf("Product ID: %d | Name: %s | Price: %.2f | Quantity: %d\n", 
-            product[index].productId, product[index].productName, product[index].productPrice, product[index].productQuantity);
+        if( matchPartialName (nameToSearch, product[index].name)){
+            foundIndices[ indexCount++ ] = index;                              
         }
     }
 
-    if(!found){
-        printf("\nNo Product Found With Name: %s !", nameToSearch);
-    }
-
-    return 0;
+    return indexCount;
 }
 
-int searchProductByPriceRange(struct ProductInformation *product, int numberOfProducts){
+int searchProductByPriceRange(struct ProductInformation *product, int numberOfProducts, int foundIndices[]){
 
     printf("\nEnter Product Price Range (minimum, maximum) to search:");
     float minimumRangeToSearch;
     float maximumRangeToSearch;
-    int found = 0;
+    int indexCount = 0;
 
     if(scanf("%f %f", &minimumRangeToSearch, &maximumRangeToSearch) != 2 || isPriceValid(minimumRangeToSearch) || isPriceValid(maximumRangeToSearch) || 
         minimumRangeToSearch < 0 || maximumRangeToSearch < 0 || maximumRangeToSearch < minimumRangeToSearch){
@@ -303,27 +284,19 @@ int searchProductByPriceRange(struct ProductInformation *product, int numberOfPr
 
     for(int index = 0; index < numberOfProducts; index++){
 
-        if(product[index].productPrice >= minimumRangeToSearch && product[index].productPrice <= maximumRangeToSearch){
-            
-            found = 1;
-            printf("\nProducts in price range: ");
-            printf("Product ID: %d | Name: %s | Price: %.2f | Quantity: %d\n", 
-            product[index].productId, product[index].productName, product[index].productPrice, product[index].productQuantity);
+        if(product[index].price >= minimumRangeToSearch && product[index].price <= maximumRangeToSearch){
+            foundIndices[indexCount++] = index;
         }
     }
 
-    if(!found){
-        printf("\nNo Product Found Within this Price Range! \n");
-    }
-
-    return 0;
+    return indexCount;
 }
 
-int deleteProductFromInventory(struct ProductInformation **product, int *numberOfProducts){
+void deleteProductFromInventory(struct ProductInformation **product, int *numberOfProducts){
 
     if(*product == NULL || *numberOfProducts <= 0){
         printf("\nNo products to delete.\n");
-        return 1;
+        return;
     }
 
     printf("\nEnter Product ID to delete: ");
@@ -332,24 +305,14 @@ int deleteProductFromInventory(struct ProductInformation **product, int *numberO
     if(scanf("%d", &idToDelete) != 1 || isIdValid(idToDelete)){
         printf("\nError: Invalid Input for Product ID \n");
         while(getchar() != '\n');
-        return 1;
+        return;
     }
 
-    int found = 0;
-    int deleteIndex = -1;
+    int deleteIndex = searchProductById(*product, *numberOfProducts, idToDelete);
 
-    for(int index = 0; index < *numberOfProducts; index++){
-
-        if((*product)[index].productId == idToDelete){
-            found = 1;
-            deleteIndex = index;
-            break;
-        }
-    }
-
-    if(!found){
+    if(deleteIndex == -1){
         printf("\nProduct Not Found!\n");
-        return 0;
+        return;
     }
      
     for(int iterator = deleteIndex; iterator < *numberOfProducts - 1; iterator++){
@@ -359,7 +322,7 @@ int deleteProductFromInventory(struct ProductInformation **product, int *numberO
 
     (*numberOfProducts)--;
 
-    if(*numberOfProducts > 0){
+    if(*numberOfProducts > 0){        
 
         struct ProductInformation *temporaryProduct = realloc(*product, (*numberOfProducts) * sizeof(struct ProductInformation));
 
@@ -373,19 +336,22 @@ int deleteProductFromInventory(struct ProductInformation **product, int *numberO
 
     }
 
-    else{
+    else{                          
         free(*product);
         *product = NULL;
     }
     
     printf("\nProduct deleted successfully! \n");
-    return 0;
     
 }
 
 void inventoryMenu(struct ProductInformation **product, int *numberOfProducts){
 
     int choice = 0;
+    int indexCount = 0;
+    int indexFoundAt = -1;
+    int foundIndices[MAX_INITIAL_PRODUCTS];
+    int searchId;
 
     while(choice != 8){
 
@@ -407,6 +373,8 @@ void inventoryMenu(struct ProductInformation **product, int *numberOfProducts){
             continue;
         }
 
+        while(getchar() != '\n');
+
         switch(choice){
 
             case 1:
@@ -422,21 +390,61 @@ void inventoryMenu(struct ProductInformation **product, int *numberOfProducts){
                 break;
 
             case 4:
-                searchProductById(*product, *numberOfProducts);
+                printf("\nEnter Product ID to search: ");
+                
+                if(scanf("%d", &searchId) != 1 || isIdValid(searchId)){
+                    printf("\nError: Invalid Input for Product ID \n");
+                    break;
+                }
+
+                indexFoundAt = searchProductById(*product, *numberOfProducts, searchId);
+
+                if(indexFoundAt != -1){
+                    printf("Product Found: \n");
+                    printProductDetails(*product, indexFoundAt);
+                }
+                else{
+                    printf("\nNo Product Found With ID!");
+                }
+
                 break;
 
             case 5:
-                searchProductByName(*product, *numberOfProducts);
+                indexCount = searchProductByName(*product, *numberOfProducts, foundIndices);
+
+                if(indexCount > 0){
+                    printf("Products Found: \n");
+                    for(int index = 0; index < indexCount; index++){
+                        printProductDetails(*product, foundIndices[index]);
+                    }
+                }
+                else{
+                    printf("\nNo Product Found With This Name!");
+                }
+
                 break;
 
             case 6:
-                searchProductByPriceRange(*product, *numberOfProducts);
+                indexCount = searchProductByPriceRange(*product, *numberOfProducts, foundIndices);
+
+                if(indexCount > 0){
+                    printf("\nProducts in price range: \n");
+
+                    for(int index = 0; index < indexCount; index++){
+                        printProductDetails(*product, foundIndices[index]);
+                    }
+                    
+                }
+                else{
+                    printf("\nNo Product Found Within this Price Range! \n");
+                }
+                
                 break;
 
             case 7:
                 deleteProductFromInventory(product, numberOfProducts);
                 break;
-
+                
             case 8:
                 printf("\nExiting program...\n");
                 break;
@@ -448,6 +456,7 @@ void inventoryMenu(struct ProductInformation **product, int *numberOfProducts){
     }
 
     free(*product);
+    *product = NULL;
     printf("\nMemory released successfully.\n");
 }
 
