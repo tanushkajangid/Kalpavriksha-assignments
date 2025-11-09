@@ -43,7 +43,7 @@ FreeBlock *head = NULL;
 FreeBlock *tail = NULL;
 
 FileNode *root = NULL;
-FileNode *CurrentWorkingDirectory = NULL;
+FileNode *currentWorkingDirectory = NULL;
 
 //*********************************************************************//
 
@@ -91,8 +91,10 @@ void freeBlock(int index){
 }
 
 int countFreeBlocks(){
+    
     int count = 0;
     FreeBlock *temporary = head;
+    
     while(temporary){
         count++;
         temporary = temporary->nextNode;
@@ -120,7 +122,7 @@ FileNode *createNode(const char *name, int isDirectory){
     node->isDirectory = isDirectory;
     node->fileContentSize = 0;
     node->childNode = NULL;
-    node->parentNode = CurrentWorkingDirectory;
+    node->parentNode = currentWorkingDirectory;
     node->nextNode = NULL;
     node->previousNode = NULL;
 
@@ -132,6 +134,7 @@ FileNode *createNode(const char *name, int isDirectory){
 }
 
 void insertChildNode(FileNode *parent, FileNode *child){
+    
     if (!parent || !child) {
         return;
     }
@@ -139,6 +142,7 @@ void insertChildNode(FileNode *parent, FileNode *child){
     child->parentNode = parent;
 
     if(parent->childNode == NULL){
+        
         parent->childNode = child;
         child->nextNode = child;
         child->previousNode = child;
@@ -189,6 +193,7 @@ void removeChildNode(FileNode *parent, FileNode *target){
         if(parent->childNode == target){
             parent->childNode = target->nextNode;
         }
+        
         target->previousNode->nextNode = target->nextNode;
         target->nextNode->previousNode = target->previousNode;
     }
@@ -202,16 +207,18 @@ void initializeVirtualFileSystem(){
 
     initializeFreeDLL();
 
-    CurrentWorkingDirectory = NULL;
+    currentWorkingDirectory = NULL;
     root = createNode("/",1);
     root->parentNode = NULL;
-    CurrentWorkingDirectory = root;
+    currentWorkingDirectory = root;
 }
 
 void freeFileTree(FileNode *node) {
+    
     if (!node) {
         return;
     }
+    
     if (node->isDirectory) {
         
         while (node->childNode) {
@@ -248,9 +255,10 @@ void cleanUpVirtualFileSystem(){
     if(root){
         freeFileTree(root);
         root = NULL;
-        CurrentWorkingDirectory = NULL;
+        currentWorkingDirectory = NULL;
     }
     while(head){
+        
         FreeBlock *temporary = head;
         head = head->nextNode;
         free(temporary);
@@ -269,13 +277,13 @@ void makeDirectory(char *name){    //mkdir
         return; 
     }
 
-    if(findChildNode(CurrentWorkingDirectory, name)){
+    if(findChildNode(currentWorkingDirectory, name)){
         printf("Directory already exits.\n");
         return ;
     }
 
     FileNode *directory = createNode(name, 1);
-    insertChildNode(CurrentWorkingDirectory, directory);
+    insertChildNode(currentWorkingDirectory, directory);
     printf("Directory '%s' created successfully.\n", name);
     
 }
@@ -287,13 +295,14 @@ void create(char *name){
         return; 
     }
 
-    if(findChildNode(CurrentWorkingDirectory, name)){
+    if(findChildNode(currentWorkingDirectory, name)){
         printf("File already exists.\n");
         return;
     }
 
     FileNode *file = createNode(name, 0);
-    insertChildNode(CurrentWorkingDirectory, file);
+    
+    insertChildNode(currentWorkingDirectory, file);
     printf("File '%s' created successfully.\n", name);
     
 }
@@ -305,7 +314,7 @@ void writeFile(char *name, char *data){
         return; 
     }
 
-    FileNode *file = findChildNode(CurrentWorkingDirectory, name);
+    FileNode *file = findChildNode(currentWorkingDirectory, name);
 
     if(!file || file->isDirectory){
         printf("File not found.\n");
@@ -313,6 +322,7 @@ void writeFile(char *name, char *data){
     }
 
     for (int iterator = 0; iterator < MAX_NUMBER_OF_BLOCKS && file->blockPointer[iterator] != -1; iterator++) {
+        
         freeBlock(file->blockPointer[iterator]);
         file->blockPointer[iterator] = -1;
     }
@@ -326,6 +336,7 @@ void writeFile(char *name, char *data){
     }
 
     int freeCount = countFreeBlocks();
+    
     if (blocksNeeded > freeCount) { 
         printf("Disk full. Write failed.\n"); 
         return; 
@@ -359,7 +370,7 @@ void readFile(char *name){
         return; 
     }
 
-    FileNode *file = findChildNode(CurrentWorkingDirectory, name);
+    FileNode *file = findChildNode(currentWorkingDirectory, name);
 
     if(!file || file ->isDirectory){
         printf("File Not Found.\n");
@@ -370,8 +381,10 @@ void readFile(char *name){
     int remainingSize = file->fileContentSize;
 
     for(int iterator = 0; iterator < MAX_NUMBER_OF_BLOCKS && file->blockPointer[iterator] != -1 && remainingSize > 0; iterator++){
+        
         int blockIndex = file->blockPointer[iterator];
         int bytesToRead ;
+        
         if(remainingSize >BLOCK_SIZE ){
             bytesToRead = BLOCK_SIZE;
         }
@@ -396,7 +409,7 @@ void deleteFile(char *name){
         return; 
     }
 
-    FileNode *file = findChildNode(CurrentWorkingDirectory, name);
+    FileNode *file = findChildNode(currentWorkingDirectory, name);
 
     if(!file){
         printf("File Not found.\n");
@@ -409,11 +422,12 @@ void deleteFile(char *name){
     }
 
     for(int iterator = 0; iterator < MAX_NUMBER_OF_BLOCKS && file ->blockPointer[iterator] != -1; iterator++){
+        
         freeBlock(file->blockPointer[iterator]);
         file->blockPointer[iterator] = -1;
     }
 
-    removeChildNode(CurrentWorkingDirectory, file);
+    removeChildNode(currentWorkingDirectory, file);
 
     printf("File '%s' delete successfully.\n", name);
 }      
@@ -425,7 +439,7 @@ void removeDirectory(char *name){
         return; 
     }
 
-    FileNode *directory = findChildNode(CurrentWorkingDirectory, name);
+    FileNode *directory = findChildNode(currentWorkingDirectory, name);
 
     if (!directory) {
         printf("Directory not found.\n");
@@ -442,7 +456,7 @@ void removeDirectory(char *name){
         return;
     }
 
-    removeChildNode(CurrentWorkingDirectory, directory);
+    removeChildNode(currentWorkingDirectory, directory);
 
     printf("Directory '%s' removed successfully.\n", name);
 
@@ -450,17 +464,18 @@ void removeDirectory(char *name){
 
 void list(){
 
-    if(!CurrentWorkingDirectory-> childNode){
+    if(!currentWorkingDirectory-> childNode){
         printf("empty\n");
         return ;
     }
 
-    FileNode *current = CurrentWorkingDirectory->childNode;
+    FileNode *current = currentWorkingDirectory->childNode;
+    
     do{
         printf("%s%s  ", current->fileName, current->isDirectory ? "/" : "");
         current = current->nextNode;
 
-    } while(current != CurrentWorkingDirectory->childNode);
+    } while(current != currentWorkingDirectory->childNode);
 
     printf("\n");
 }  
@@ -473,31 +488,33 @@ void changeDirectory(char *name){
     }
 
     if (strcmp(name, "..") == 0) {
-        if (CurrentWorkingDirectory->parentNode) {
-            CurrentWorkingDirectory = CurrentWorkingDirectory->parentNode;
+        if (currentWorkingDirectory->parentNode) {
+            currentWorkingDirectory = currentWorkingDirectory->parentNode;
         }
         return;
     }
 
-    FileNode *directory = findChildNode(CurrentWorkingDirectory, name);
+    FileNode *directory = findChildNode(currentWorkingDirectory, name);
 
     if (!directory || !directory->isDirectory) {
         printf("Directory not found.\n");
         return;
     }
-    CurrentWorkingDirectory = directory;
+    currentWorkingDirectory = directory;
 } 
 
 void pathOfWorkingDirectory(){
 
-    if (CurrentWorkingDirectory == root) { 
+    if (currentWorkingDirectory == root) { 
         printf("/\n"); 
         return; 
     }
-    FileNode *temporary = CurrentWorkingDirectory;
+    
+    FileNode *temporary = currentWorkingDirectory;
     char path[MAX_PATH_LENGTH] = "";
 
     while (temporary && temporary != root) {
+        
         char tempPath[PATH_LENGTH];
         snprintf(tempPath, sizeof(tempPath), "/%s%s", temporary->fileName, path);
         strncpy(path, tempPath, sizeof(tempPath)-1);
@@ -521,12 +538,15 @@ void availableFreeDisk(){
 }
 
 int inputParser(char *userInput, char *tokens[]){
+    
     int count = 0;
     char *token = strtok(userInput, " \t\n");
+    
     while(token != NULL && count < MAX_TOKEN-1 ){
         tokens[count++] = token;
         token = strtok(NULL, " \t\n");
     }
+    
     tokens[count] = NULL;
     return count;
 }
@@ -562,36 +582,39 @@ void executeCommand(int tokenCount, char *tokens[]){
             printf("Usage: write <filename> <data>\n");
         }
         else {
-
-           char data[BLOCK_SIZE * 10] = "";
+            char data[BLOCK_SIZE * 10] = "";
             for (int i = 2; i < tokenCount; i++) {
                 strcat(data, tokens[i]);
-                if (i < tokenCount - 1)
+                if (i < tokenCount - 1){
                     strcat(data, " ");
+                }
             }
             writeFile(tokens[1], data);
         }
     }
 
     else if (!strcmp(command, "read")) {
-        if (tokenCount < 2)
+        if (tokenCount < 2){
             printf("Usage: read <filename>\n");
+        }
         else{
             readFile(tokens[1]);
         }
     }
 
     else if (!strcmp(command, "delete")) {
-        if (tokenCount < 2)
+        if (tokenCount < 2){
             printf("Usage: delete <filename>\n");
+        }
         else {
             deleteFile(tokens[1]);
         }
     }
 
     else if (!strcmp(command, "rmdir")) {
-        if (tokenCount < 2)
+        if (tokenCount < 2){
             printf("Usage: rmdir <dirname>\n");
+        }
         else{
             removeDirectory(tokens[1]);
         }
@@ -602,8 +625,9 @@ void executeCommand(int tokenCount, char *tokens[]){
     }
 
     else if (!strcmp(command, "cd")) {
-        if (tokenCount < 2)
+        if (tokenCount < 2){
             printf("Usage: cd <dirname>\n");
+        }
         else{
             changeDirectory(tokens[1]);
         }
@@ -639,12 +663,13 @@ int main(){
 
     while(1){
 
-        if(CurrentWorkingDirectory == root){
+        if(currentWorkingDirectory == root){
             printf("/ > ");
         }
         else{
             char path[MAX_PART_LENGTH] = "";
-            FileNode *temporary = CurrentWorkingDirectory;
+            FileNode *temporary = currentWorkingDirectory;
+            
             while( temporary && temporary != root){
                 char part[PART_LENGTH];
                 snprintf(part, sizeof(part), "/%s%s", temporary->fileName, path);
