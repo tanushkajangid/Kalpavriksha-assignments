@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include <math.h>
 
 #define BLOCK_SIZE 512
 #define NUMBER_OF_BLOCKS 1024
@@ -14,11 +12,11 @@
 #define MAX_PART_LENGTH 256
 #define MAX_TOKEN 20
 
-typedef struct FreeBlockDoublyLinkedList{
+typedef struct FreeBlock{
 
     int blockIndex;
-    struct FreeBlockDoublyLinkedList *nextNode;
-    struct FreeBlockDoublyLinkedList *previousNode;
+    struct FreeBlock *nextNode;
+    struct FreeBlock *previousNode;
     
 }FreeBlock;
 
@@ -35,8 +33,6 @@ typedef struct FileNodeData{
 }FileNode;
 
 
-//*********************************************************************//
-
 char virtualDisk[NUMBER_OF_BLOCKS][BLOCK_SIZE];
 
 FreeBlock *head = NULL;
@@ -45,7 +41,6 @@ FreeBlock *tail = NULL;
 FileNode *root = NULL;
 FileNode *currentWorkingDirectory = NULL;
 
-//*********************************************************************//
 
 int allocateBlock(){
 
@@ -112,7 +107,6 @@ void initializeFreeDLL(){
     }
 }
 
-//*********************************************************************************** */
 
 FileNode *createNode(const char *name, int isDirectory){
 
@@ -201,7 +195,6 @@ void removeChildNode(FileNode *parent, FileNode *target){
     free(target);
 }
 
-//*********************************************************** */
 
 void initializeVirtualFileSystem(){
 
@@ -268,7 +261,6 @@ void cleanUpVirtualFileSystem(){
     printf("Memory released. Exiting program...\n");
 }
 
-//******************************************************************************* */
 
 void makeDirectory(char *name){    //mkdir
 
@@ -537,6 +529,15 @@ void availableFreeDisk(){
     printf("Disk Usage: %.2f%%\n", usagePercent);
 }
 
+int validateTokenCount(int tokenCount, int requiredToken, const char *usage ){
+    
+    if(tokenCount < requiredToken){
+        printf("Usage: %s\n", usage);
+        return 0;
+    }
+    return 1;
+}
+
 int inputParser(char *userInput, char *tokens[]){
     
     int count = 0;
@@ -560,27 +561,26 @@ void executeCommand(int tokenCount, char *tokens[]){
     char *command = tokens[0];
 
     if(!strcmp(command, "mkdir")){
-        if (tokenCount < 2) {
-            printf("Usage: mkdir <dirname>\n");
+        if (!validateTokenCount(tokenCount, 2, "mkdir <dirname>")) {
+            return;
         }
-        else{
-            makeDirectory(tokens[1]);
-        }
+
+        makeDirectory(tokens[1]);
     }
 
     else if (!strcmp(command, "create")) {
-        if (tokenCount < 2) {
-            printf("Usage: create <filename>\n");
+        if (!validateTokenCount(tokenCount, 2, "create <filename>")) {
+            return;
         }
-        else {
-            create(tokens[1]);
-        }
+        
+        create(tokens[1]); 
     }
 
     else if (!strcmp(command, "write")) {
-        if (tokenCount < 3) {
-            printf("Usage: write <filename> <data>\n");
+        if (!validateTokenCount(tokenCount, 3, "write <filename> <data>")) {
+            return;
         }
+            
         else {
             char data[BLOCK_SIZE * 10] = "";
             for (int i = 2; i < tokenCount; i++) {
@@ -594,30 +594,27 @@ void executeCommand(int tokenCount, char *tokens[]){
     }
 
     else if (!strcmp(command, "read")) {
-        if (tokenCount < 2){
-            printf("Usage: read <filename>\n");
+        if (!validateTokenCount(tokenCount, 2, "read <filename>")) {
+            return;
         }
-        else{
-            readFile(tokens[1]);
-        }
+        
+        readFile(tokens[1]);
     }
 
     else if (!strcmp(command, "delete")) {
-        if (tokenCount < 2){
-            printf("Usage: delete <filename>\n");
+        if (!validateTokenCount(tokenCount, 2, "delete <filename>")) {
+            return;
         }
-        else {
-            deleteFile(tokens[1]);
-        }
+        
+        deleteFile(tokens[1]);
     }
 
     else if (!strcmp(command, "rmdir")) {
-        if (tokenCount < 2){
-            printf("Usage: rmdir <dirname>\n");
+        if (!validateTokenCount(tokenCount, 2, "rmdir <dirname>")) {
+            return;
         }
-        else{
-            removeDirectory(tokens[1]);
-        }
+        
+        removeDirectory(tokens[1]);
     }
 
     else if (!strcmp(command, "ls")) {
@@ -625,12 +622,11 @@ void executeCommand(int tokenCount, char *tokens[]){
     }
 
     else if (!strcmp(command, "cd")) {
-        if (tokenCount < 2){
-            printf("Usage: cd <dirname>\n");
+        if (!validateTokenCount(tokenCount, 2, "cd <dirname>")) {
+            return;
         }
-        else{
-            changeDirectory(tokens[1]);
-        }
+        
+        changeDirectory(tokens[1]);
     }
 
     else if (!strcmp(command, "pwd")) {
@@ -654,7 +650,7 @@ void executeCommand(int tokenCount, char *tokens[]){
 int main(){
 
     char userInput[BLOCK_SIZE];
-
+    
     printf("Compact VFS - ready. Type 'exit' to quit.\n");
 
     char *tokens[MAX_TOKEN];
@@ -666,6 +662,7 @@ int main(){
         if(currentWorkingDirectory == root){
             printf("/ > ");
         }
+            
         else{
             char path[MAX_PART_LENGTH] = "";
             FileNode *temporary = currentWorkingDirectory;
