@@ -33,30 +33,21 @@ typedef struct FileNodeData{
 }FileNode;
 
 
-char virtualDisk[NUMBER_OF_BLOCKS][BLOCK_SIZE];
+int allocateBlock(FreeBlock **head, FreeBlock **tail){
 
-FreeBlock *head = NULL;
-FreeBlock *tail = NULL;
-
-FileNode *root = NULL;
-FileNode *currentWorkingDirectory = NULL;
-
-
-int allocateBlock(){
-
-    if( head == NULL){
+    if( *head == NULL){
         return -1;
     }
 
-    int index = head->blockIndex;
-    FreeBlock *temporary = head;
-    head = head->nextNode;
+    int index = (*head)->blockIndex;
+    FreeBlock *temporary = *head;
+    *head = (*head)->nextNode;
 
-    if(head != NULL){
-        head->previousNode = NULL;
+    if(*head != NULL){
+        (*head)->previousNode = NULL;
     }
     else{
-        tail = NULL;
+        *tail = NULL;
     }
 
     free(temporary);
@@ -64,7 +55,7 @@ int allocateBlock(){
 
 }
 
-void freeBlock(int index){
+void freeBlock(int index, FreeBlock **head, FreeBlock **tail){
 
     if (index < 0 || index >= NUMBER_OF_BLOCKS){
         return;
@@ -73,22 +64,22 @@ void freeBlock(int index){
     FreeBlock *block = malloc(sizeof(FreeBlock));
     block->blockIndex = index;
     block->nextNode = NULL;
-    block->previousNode = tail;
+    block->previousNode = *tail;
 
-    if(tail != NULL){
-        tail->nextNode = block;
+    if(*tail != NULL){
+        (*tail)->nextNode = block;
     }
     else{
-        head = block;
+        *head = block;
     }
 
-    tail = block;
+    *tail = block;
 }
 
-int countFreeBlocks(){
+int countFreeBlocks(FreeBlock **head){
     
     int count = 0;
-    FreeBlock *temporary = head;
+    FreeBlock *temporary = *head;
     
     while(temporary){
         count++;
@@ -98,17 +89,17 @@ int countFreeBlocks(){
     return count;
 }
 
-void initializeFreeDLL(){
-    head = NULL;
-    tail = NULL;
+void initializeFreeDLL(FreeBlock **head, FreeBlock **tail){
+    *head = NULL;
+    *tail = NULL;
 
     for(int iterator = 0; iterator < NUMBER_OF_BLOCKS; iterator++){
-        freeBlock(iterator);
+        freeBlock(iterator, head, tail);
     }
 }
 
 
-FileNode *createNode(const char *name, int isDirectory){
+FileNode *createNode(const char *name, int isDirectory, FileNode *parent){
 
     FileNode *node = malloc(sizeof(FileNode));
 
@@ -116,7 +107,7 @@ FileNode *createNode(const char *name, int isDirectory){
     node->isDirectory = isDirectory;
     node->fileContentSize = 0;
     node->childNode = NULL;
-    node->parentNode = currentWorkingDirectory;
+    node->parentNode = parent;
     node->nextNode = NULL;
     node->previousNode = NULL;
 
@@ -196,17 +187,17 @@ void removeChildNode(FileNode *parent, FileNode *target){
 }
 
 
-void initializeVirtualFileSystem(){
+void initializeVirtualFileSystem(FileNode **currentWorkingDirectory, FileNode **root, FreeBlock **head, FreeBlock **tail){
 
-    initializeFreeDLL();
+    initializeFreeDLL(head, tail);
 
-    currentWorkingDirectory = NULL;
-    root = createNode("/",1);
-    root->parentNode = NULL;
-    currentWorkingDirectory = root;
+    *currentWorkingDirectory = NULL;
+    *root = createNode("/",1,*currentWorkingDirectory);
+    (*root)->parentNode = NULL;
+    *currentWorkingDirectory = *root;
 }
 
-void freeFileTree(FileNode *node) {
+void freeFileTree(FileNode *node, FreeBlock **head, FreeBlock **tail) {
     
     if (!node) {
         return;
@@ -227,7 +218,7 @@ void freeFileTree(FileNode *node) {
                 child->nextNode->previousNode = child->previousNode;
             }
 
-            freeFileTree(child);
+            freeFileTree(child, head, tail);
         }
         free(node);
 
@@ -236,77 +227,77 @@ void freeFileTree(FileNode *node) {
         
         for (int iterator = 0; iterator < NUMBER_OF_BLOCKS && node->blockPointer[iterator] != -1; iterator++) {
 
-            freeBlock(node->blockPointer[iterator]);
+            freeBlock(node->blockPointer[iterator], head, tail);
             node->blockPointer[iterator] = -1;
         }
         free(node);
     }
 }
 
-void cleanUpVirtualFileSystem(){
+void cleanUpVirtualFileSystem(FileNode **currentWorkingDirectory, FileNode **root, FreeBlock **head, FreeBlock **tail ){
 
     if(root){
-        freeFileTree(root);
-        root = NULL;
-        currentWorkingDirectory = NULL;
+        freeFileTree(*root, head, tail);
+        *root = NULL;
+        *currentWorkingDirectory = NULL;
     }
-    while(head){
+    while(*head){
         
-        FreeBlock *temporary = head;
-        head = head->nextNode;
+        FreeBlock *temporary = *head;
+        *head = (*head)->nextNode;
         free(temporary);
     }
-    tail = NULL;
+    *tail = NULL;
 
     printf("Memory released. Exiting program...\n");
 }
 
 
-void makeDirectory(char *name){    //mkdir
+void makeDirectory(char *name, FileNode **currentWorkingDirectory){ 
 
     if (!name) {
         printf("Usage: mkdir <dirname>\n");
         return; 
     }
 
-    if(findChildNode(currentWorkingDirectory, name)){
+    if(findChildNode(*currentWorkingDirectory, name)){
         printf("Directory already exits.\n");
         return ;
     }
 
-    FileNode *directory = createNode(name, 1);
-    insertChildNode(currentWorkingDirectory, directory);
+    FileNode *directory = createNode(name, 1, *currentWorkingDirectory);
+    insertChildNode(*currentWorkingDirectory, directory);
     printf("Directory '%s' created successfully.\n", name);
     
 }
 
-void create(char *name){
+void create(char *name, FileNode **currentWorkingDirectory){
 
     if (!name) { 
         printf("Usage: create <filename>\n"); 
         return; 
     }
 
-    if(findChildNode(currentWorkingDirectory, name)){
+    if(findChildNode(*currentWorkingDirectory, name)){
         printf("File already exists.\n");
         return;
     }
 
-    FileNode *file = createNode(name, 0);
+    FileNode *file = createNode(name, 0, *currentWorkingDirectory);
     
-    insertChildNode(currentWorkingDirectory, file);
+    insertChildNode(*currentWorkingDirectory, file);
     printf("File '%s' created successfully.\n", name);
     
 }
 
-void writeFile(char *name, char *data){
+void writeFile(char *name, char *data, FileNode** currentWorkingDirectory, FreeBlock**head, FreeBlock **tail, char virtualDisk[NUMBER_OF_BLOCKS][BLOCK_SIZE]){
 
     if (!name || !data) { 
         printf("Usage: write <filename> <data>\n"); 
         return; 
     }
 
-    FileNode *file = findChildNode(currentWorkingDirectory, name);
+    FileNode *file = findChildNode(*currentWorkingDirectory, name);
 
     if(!file || file->isDirectory){
         printf("File not found.\n");
@@ -315,7 +306,7 @@ void writeFile(char *name, char *data){
 
     for (int iterator = 0; iterator < MAX_NUMBER_OF_BLOCKS && file->blockPointer[iterator] != -1; iterator++) {
         
-        freeBlock(file->blockPointer[iterator]);
+        freeBlock(file->blockPointer[iterator], head, tail);
         file->blockPointer[iterator] = -1;
     }
 
@@ -327,7 +318,7 @@ void writeFile(char *name, char *data){
         return; 
     }
 
-    int freeCount = countFreeBlocks();
+    int freeCount = countFreeBlocks(head);
     
     if (blocksNeeded > freeCount) { 
         printf("Disk full. Write failed.\n"); 
@@ -337,7 +328,7 @@ void writeFile(char *name, char *data){
     int offset = 0;
 
     for (int iterator = 0; iterator < blocksNeeded; iterator++) {
-        int blockIndex = allocateBlock();
+        int blockIndex = allocateBlock(head, tail);
 
         if (blockIndex == -1) { 
             printf("Unexpected disk full.\n"); 
@@ -355,14 +346,14 @@ void writeFile(char *name, char *data){
     printf("Data written successfully (size=%d bytes).\n", length);
 }
 
-void readFile(char *name){
+void readFile(char *name,FileNode **currentWorkingDirectory, char virtualDisk[NUMBER_OF_BLOCKS][BLOCK_SIZE]){
 
     if (!name) { 
         printf("Usage: read <filename>\n"); 
         return; 
     }
 
-    FileNode *file = findChildNode(currentWorkingDirectory, name);
+    FileNode *file = findChildNode(*currentWorkingDirectory, name);
 
     if(!file || file ->isDirectory){
         printf("File Not Found.\n");
@@ -394,14 +385,14 @@ void readFile(char *name){
     printf("\n");
 } 
 
-void deleteFile(char *name){
+void deleteFile(char *name,FileNode **currentWorkingDirectory, FreeBlock **head, FreeBlock ** tail){
 
     if (!name) { 
         printf("Usage: delete <filename>\n"); 
         return; 
     }
 
-    FileNode *file = findChildNode(currentWorkingDirectory, name);
+    FileNode *file = findChildNode(*currentWorkingDirectory, name);
 
     if(!file){
         printf("File Not found.\n");
@@ -415,23 +406,23 @@ void deleteFile(char *name){
 
     for(int iterator = 0; iterator < MAX_NUMBER_OF_BLOCKS && file ->blockPointer[iterator] != -1; iterator++){
         
-        freeBlock(file->blockPointer[iterator]);
+        freeBlock(file->blockPointer[iterator], head, tail);
         file->blockPointer[iterator] = -1;
     }
 
-    removeChildNode(currentWorkingDirectory, file);
+    removeChildNode(*currentWorkingDirectory, file);
 
     printf("File '%s' delete successfully.\n", name);
 }      
 
-void removeDirectory(char *name){
+void removeDirectory(char *name, FileNode **currentWorkingDirectory){
 
     if (!name) { 
         printf("Usage: rmdir <dirname>\n"); 
         return; 
     }
 
-    FileNode *directory = findChildNode(currentWorkingDirectory, name);
+    FileNode *directory = findChildNode(*currentWorkingDirectory, name);
 
     if (!directory) {
         printf("Directory not found.\n");
@@ -448,31 +439,31 @@ void removeDirectory(char *name){
         return;
     }
 
-    removeChildNode(currentWorkingDirectory, directory);
+    removeChildNode(*currentWorkingDirectory, directory);
 
     printf("Directory '%s' removed successfully.\n", name);
 
 } 
 
-void list(){
+void list(FileNode **currentWorkingDirectory){
 
-    if(!currentWorkingDirectory-> childNode){
+    if(!(*currentWorkingDirectory)-> childNode){
         printf("empty\n");
         return ;
     }
 
-    FileNode *current = currentWorkingDirectory->childNode;
+    FileNode *current = (*currentWorkingDirectory)->childNode;
     
     do{
         printf("%s%s  ", current->fileName, current->isDirectory ? "/" : "");
         current = current->nextNode;
 
-    } while(current != currentWorkingDirectory->childNode);
+    } while(current != (*currentWorkingDirectory)->childNode);
 
     printf("\n");
 }  
 
-void changeDirectory(char *name){
+void changeDirectory(char *name, FileNode **currentWorkingDirectory){
 
     if (!name) { 
         printf("Usage: cd <dirname>\n"); 
@@ -480,32 +471,32 @@ void changeDirectory(char *name){
     }
 
     if (strcmp(name, "..") == 0) {
-        if (currentWorkingDirectory->parentNode) {
-            currentWorkingDirectory = currentWorkingDirectory->parentNode;
+        if ((*currentWorkingDirectory)->parentNode) {
+            (*currentWorkingDirectory) = (*currentWorkingDirectory)->parentNode;
         }
         return;
     }
 
-    FileNode *directory = findChildNode(currentWorkingDirectory, name);
+    FileNode *directory = findChildNode(*currentWorkingDirectory, name);
 
     if (!directory || !directory->isDirectory) {
         printf("Directory not found.\n");
         return;
     }
-    currentWorkingDirectory = directory;
+    *currentWorkingDirectory = directory;
 } 
 
-void pathOfWorkingDirectory(){
+void pathOfWorkingDirectory(FileNode **currentWorkingDirectory, FileNode **root){
 
-    if (currentWorkingDirectory == root) { 
+    if (*currentWorkingDirectory == *root) { 
         printf("/\n"); 
         return; 
     }
     
-    FileNode *temporary = currentWorkingDirectory;
+    FileNode *temporary = *currentWorkingDirectory;
     char path[MAX_PATH_LENGTH] = "";
 
-    while (temporary && temporary != root) {
+    while (temporary && temporary != *root) {
         
         char tempPath[PATH_LENGTH];
         snprintf(tempPath, sizeof(tempPath), "/%s%s", temporary->fileName, path);
@@ -517,9 +508,9 @@ void pathOfWorkingDirectory(){
 
 } 
 
-void availableFreeDisk(){
+void availableFreeDisk(FreeBlock **head){
 
-    int freeBlocks = countFreeBlocks();
+    int freeBlocks = countFreeBlocks(head);
     int usedBlocks = NUMBER_OF_BLOCKS - freeBlocks;
     double usagePercent = ((double)usedBlocks / NUMBER_OF_BLOCKS) * 100.0;
 
@@ -552,7 +543,7 @@ int inputParser(char *userInput, char *tokens[]){
     return count;
 }
 
-void executeCommand(int tokenCount, char *tokens[]){
+void executeCommand(int tokenCount, char *tokens[], FileNode **currentWorkingDirectory, FileNode **root, FreeBlock **head, FreeBlock **tail, char virtualDisk[NUMBER_OF_BLOCKS][BLOCK_SIZE]){
 
     if(tokenCount == 0){
         return;
@@ -565,7 +556,7 @@ void executeCommand(int tokenCount, char *tokens[]){
             return;
         }
 
-        makeDirectory(tokens[1]);
+        makeDirectory(tokens[1], currentWorkingDirectory);
     }
 
     else if (!strcmp(command, "create")) {
@@ -573,7 +564,7 @@ void executeCommand(int tokenCount, char *tokens[]){
             return;
         }
         
-        create(tokens[1]); 
+        create(tokens[1], currentWorkingDirectory); 
     }
 
     else if (!strcmp(command, "write")) {
@@ -589,7 +580,7 @@ void executeCommand(int tokenCount, char *tokens[]){
                     strcat(data, " ");
                 }
             }
-            writeFile(tokens[1], data);
+            writeFile(tokens[1], data, currentWorkingDirectory, head, tail, virtualDisk);
         }
     }
 
@@ -598,7 +589,7 @@ void executeCommand(int tokenCount, char *tokens[]){
             return;
         }
         
-        readFile(tokens[1]);
+        readFile(tokens[1], currentWorkingDirectory, virtualDisk);
     }
 
     else if (!strcmp(command, "delete")) {
@@ -606,7 +597,7 @@ void executeCommand(int tokenCount, char *tokens[]){
             return;
         }
         
-        deleteFile(tokens[1]);
+        deleteFile(tokens[1], currentWorkingDirectory, head, tail);
     }
 
     else if (!strcmp(command, "rmdir")) {
@@ -614,11 +605,11 @@ void executeCommand(int tokenCount, char *tokens[]){
             return;
         }
         
-        removeDirectory(tokens[1]);
+        removeDirectory(tokens[1], currentWorkingDirectory);
     }
 
     else if (!strcmp(command, "ls")) {
-        list();
+        list(currentWorkingDirectory);
     }
 
     else if (!strcmp(command, "cd")) {
@@ -626,19 +617,19 @@ void executeCommand(int tokenCount, char *tokens[]){
             return;
         }
         
-        changeDirectory(tokens[1]);
+        changeDirectory(tokens[1], currentWorkingDirectory);
     }
 
     else if (!strcmp(command, "pwd")) {
-        pathOfWorkingDirectory();
+        pathOfWorkingDirectory(currentWorkingDirectory, root);
     }
 
     else if (!strcmp(command, "df")) {
-        availableFreeDisk();
+        availableFreeDisk(head);
     }
 
     else if (!strcmp(command, "exit")) { 
-        cleanUpVirtualFileSystem();
+        cleanUpVirtualFileSystem(currentWorkingDirectory, root, head, tail);
         exit(0);
     }
 
@@ -649,13 +640,21 @@ void executeCommand(int tokenCount, char *tokens[]){
 
 int main(){
 
+    char virtualDisk[NUMBER_OF_BLOCKS][BLOCK_SIZE];
+
+    FreeBlock *head = NULL;
+    FreeBlock *tail = NULL;
+
+    FileNode *root = NULL;
+    FileNode *currentWorkingDirectory = NULL;
+
     char userInput[BLOCK_SIZE];
     
     printf("Compact VFS - ready. Type 'exit' to quit.\n");
 
     char *tokens[MAX_TOKEN];
 
-    initializeVirtualFileSystem();
+    initializeVirtualFileSystem(&currentWorkingDirectory, &root, &head, &tail);
 
     while(1){
 
@@ -682,9 +681,9 @@ int main(){
         }
 
         int tokenCount = inputParser(userInput, tokens);
-        executeCommand(tokenCount, tokens);
+        executeCommand(tokenCount, tokens, &currentWorkingDirectory, &root, &head, &tail, virtualDisk);
     }
     
-    cleanUpVirtualFileSystem();
+    cleanUpVirtualFileSystem(&currentWorkingDirectory, &root, &head, &tail);
     return 0;
 }
