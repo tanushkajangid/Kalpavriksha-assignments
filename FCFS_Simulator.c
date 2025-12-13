@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include <stdbool.h>
 
 #define MAX_SIZE 1000
 #define MAX_PROCESS 100
@@ -19,7 +19,7 @@ typedef enum{
 
 typedef struct PcbNode{
 
-    int pid;
+    int processId;
     char name[MAX_STRING];
 
     int cpuBurstTotal;
@@ -38,7 +38,7 @@ typedef struct PcbNode{
     int turnAroundTime;
     int waitingTime;
 
-    int killed;
+    bool killed;
 
     struct PcbNode *next;
     struct PcbNode *hashNext;
@@ -61,98 +61,98 @@ typedef struct Hashmap{
 
 typedef struct {
 
-    int pid;
+    int processId;
     int killTime;
 
 }KillProcess;
 
-void enqueue(Queue *q, PcbNode *process){
+void enqueue(Queue *queue, PcbNode *process){
 
     process->next = NULL;
 
-    if(!q->front){
-        q->front = process;
-        q->rear = process;
-        q->size++;
+    if(!queue->front){
+        queue->front = process;
+        queue->rear = process;
+        queue->size++;
         return;
     }
     
-    q->rear->next = process;
-    q->rear = process;
-    q->size++;
+    queue->rear->next = process;
+    queue->rear = process;
+    queue->size++;
 }
 
-PcbNode* dequeue(Queue *q){
+PcbNode* dequeue(Queue *queue){
 
-    if(!q->front) {
+    if(!queue->front) {
         return NULL;
     }
 
-    PcbNode *temp = q->front;
-    q->front = temp->next;
+    PcbNode *temporaryNode = queue->front;
+    queue->front = temporaryNode->next;
 
-    if(!q->front) {
-        q->rear = NULL;
+    if(!queue->front) {
+        queue->rear = NULL;
     }
 
-    q->size--;
-    temp->next = NULL;
-    return temp;
+    queue->size--;
+    temporaryNode->next = NULL;
+    return temporaryNode;
 }
 
-PcbNode* removeProcess(Queue *q, int pid){
+PcbNode* removeProcess(Queue *queue, int processId){
 
-    PcbNode *curr = q->front;
-    PcbNode *prev = NULL;
+    PcbNode *currentNode = queue->front;
+    PcbNode *previousNode = NULL;
 
-    while(curr){
-        if(curr->pid == pid){
-            if(prev) {
-                prev->next = curr->next;
+    while(currentNode){
+        if(currentNode->processId == processId){
+            if(previousNode) {
+                previousNode->next = currentNode->next;
             }
             else{
-                q->front = curr->next;
+                queue->front = currentNode->next;
             }
-            if(curr == q->rear){
-                q->rear = prev;
+            if(currentNode == queue->rear){
+                queue->rear = previousNode;
             }
-            q->size--;
-            curr->next = NULL;
-            return curr;
+            queue->size--;
+            currentNode->next = NULL;
+            return currentNode;
         }
-        prev = curr;
-        curr = curr->next;
+        previousNode = currentNode;
+        currentNode = currentNode->next;
     }
 
     return NULL;
 }
 
 
-int hash(int pid){
+int hash(int processId){
 
-    return pid % MAX_SIZE;
+    return processId % MAX_SIZE;
 
 }
 
 void insert(Hashmap *map, PcbNode *node){
 
-    int index = hash(node->pid);
+    int index = hash(node->processId);
 
     node->hashNext = map->hashList[index];
     map->hashList[index]= node;
 
 }
 
-PcbNode* search(Hashmap *map, int pid){
+PcbNode* search(Hashmap *map, int processId){
 
-    int index = hash(pid);
-    PcbNode *curr = map->hashList[index];
+    int index = hash(processId);
+    PcbNode *currentNode = map->hashList[index];
 
-    while(curr){
-        if(curr->pid == pid){
-            return curr;
+    while(currentNode){
+        if(currentNode->processId == processId){
+            return currentNode;
         }
-        curr = curr->hashNext;
+        currentNode = currentNode->hashNext;
     }
 
     return NULL;
@@ -189,7 +189,7 @@ PcbNode* createBlock(char* data){
 
     char ioStartInput[MAX_STRING], ioDurationInput[MAX_STRING];
 
-    sscanf(data, "%s %d %d %s %s", newProcess->name, &newProcess->pid, &newProcess->cpuBurstTotal, ioStartInput, ioDurationInput);
+    sscanf(data, "%s %d %d %s %s", newProcess->name, &newProcess->processId, &newProcess->cpuBurstTotal, ioStartInput, ioDurationInput);
     
     if(strcmp(ioStartInput, "-") == 0){
         newProcess->ioStartTime = -1;
@@ -227,11 +227,11 @@ void initializeInput(Hashmap *map, Queue *readyQ, KillProcess killedProcess[], i
         }
 
         if(strncmp(data, "KILL", 4) == 0){
-            int pid, time;
+            int processId, time;
 
-            if(sscanf(data, "KILL %d %d", &pid, &time)==2){
+            if(sscanf(data, "KILL %d %d", &processId, &time)==2){
                 killedProcess[*killCount].killTime = time;
-                killedProcess[*killCount].pid = pid;
+                killedProcess[*killCount].processId = processId;
                 (*killCount)++;
             }
 
@@ -264,19 +264,19 @@ void simulateScheduler(Hashmap *map, Queue *readyQ, Queue *waitingQ, Queue *term
         for(int i = 0; i < killCount; i++){
 
             if(killedProcess[i].killTime == tick){
-                PcbNode *node = search(map, killedProcess[i].pid);
+                PcbNode *node = search(map, killedProcess[i].processId);
 
                 if(node && node->state != TERMINATED){
-                    node->killed = 1;
+                    node->killed = true;
                     node->state = TERMINATED;
                     node->completionTime = tick;
 
-                    if(running && running->pid == node->pid){
+                    if(running && running->processId == node->processId){
                         running = NULL;
                     }
 
-                    removeProcess(readyQ, node->pid);
-                    removeProcess(waitingQ, node->pid);
+                    removeProcess(readyQ, node->processId);
+                    removeProcess(waitingQ, node->processId);
 
                     enqueue(terminatedQ, node);
                     completed++;
@@ -311,22 +311,22 @@ void simulateScheduler(Hashmap *map, Queue *readyQ, Queue *waitingQ, Queue *term
             }
         }
 
-        PcbNode *curr = waitingQ->front;
+        PcbNode *currentNode = waitingQ->front;
 
-        while(curr){
-            PcbNode *next = curr->next;
+        while(currentNode){
+            PcbNode *next = currentNode->next;
 
-            if(curr->ioRemaining > 0 && curr->ioStartedAt >= 0 && tick >= curr->ioStartedAt){
-                curr->ioRemaining--;
+            if(currentNode->ioRemaining > 0 && currentNode->ioStartedAt >= 0 && tick >= currentNode->ioStartedAt){
+                currentNode->ioRemaining--;
 
-                if(curr->ioRemaining == 0){
-                    PcbNode *done = removeProcess(waitingQ, curr->pid);
+                if(currentNode->ioRemaining == 0){
+                    PcbNode *done = removeProcess(waitingQ, currentNode->processId);
                     done->state = READY;
                     done->ioStartedAt = -1;
                     enqueue(readyQ, done);
                 }
             }
-            curr = next;
+            currentNode = next;
         }
         tick++;
     }
@@ -356,12 +356,12 @@ void displayResults(PcbNode *processList[], int processCount){
 
             if(process->killed){
                 printf("%-5d %-12s %-14d %-11d KILLED at %-8d %-10s %-10s\n", 
-                    process->pid, process->name, process->cpuBurstTotal, process->ioDuration, process->completionTime, "-", "-");
+                    process->processId, process->name, process->cpuBurstTotal, process->ioDuration, process->completionTime, "-", "-");
             }
 
             else{
                 printf("%-5d %-12s %-14d %-11d %-18s %-12d %-10d\n", 
-                    process->pid, process->name, process->cpuBurstTotal, process->ioDuration,"OK", process->turnAroundTime, process->waitingTime);
+                    process->processId, process->name, process->cpuBurstTotal, process->ioDuration,"OK", process->turnAroundTime, process->waitingTime);
             }
         }
     }
@@ -373,7 +373,7 @@ void displayResults(PcbNode *processList[], int processCount){
         for(int i = 0; i < processCount; i++){
             PcbNode *process = processList[i];
             printf("%-5d %-12s %-14d %-11d %-12d %-10d\n", 
-                process->pid, process->name, process->cpuBurstTotal, process->ioDuration, process->turnAroundTime, process->waitingTime);
+                process->processId, process->name, process->cpuBurstTotal, process->ioDuration, process->turnAroundTime, process->waitingTime);
         }
     }
 }
