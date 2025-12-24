@@ -11,13 +11,53 @@
 
 pthread_mutex_t mutex;
 
+void withdraw(int clientSocket, FILE *file, int *currentBalance){
+
+    int transactionAmount;
+    char response[BUFFER_SIZE];
+
+    read(clientSocket, &transactionAmount, sizeof(int));
+
+    if(transactionAmount <= *currentBalance){
+
+        *currentBalance -= transactionAmount;
+        fseek(file, 0, SEEK_SET);
+        fprintf(file, "%d", *currentBalance);
+
+        strcpy(response, "Withdrawal Successful");
+    
+    }
+
+    else{
+
+        strcpy(response, "Insufficient balance");
+
+    }
+
+    write(clientSocket, response, BUFFER_SIZE);
+}
+
+void deposit(int clientSocket, FILE *file, int *currentBalance){
+    
+    int transactionAmount;
+    char response[BUFFER_SIZE];
+
+    read(clientSocket, &transactionAmount, sizeof(int));
+
+    *currentBalance += transactionAmount;
+    fseek(file, 0, SEEK_SET);
+    fprintf(file, "%d", *currentBalance);
+
+    strcpy(response, "Deposit successful");
+    write(clientSocket, response, BUFFER_SIZE);
+
+}
+
 void *processClientRequest(void *socket){
     
     int clientSocket = *(int *)socket;
     int operation;
-    int transactionAmount;
     int currentBalance;
-    char response[BUFFER_SIZE];
 
     FILE *file;
 
@@ -38,11 +78,13 @@ void *processClientRequest(void *socket){
         file = fopen(DB_FILE, "w+");
 
         if (file == NULL) {
+            
             perror("DB file error");
             pthread_mutex_unlock(&mutex);
             close(clientSocket);
             free(socket);
             return NULL;
+            
         }
 
         fprintf(file, "0");
@@ -54,44 +96,19 @@ void *processClientRequest(void *socket){
     switch(operation){
 
         case 1:
-            read(clientSocket, &transactionAmount, sizeof(int));
-
-            if(transactionAmount <= currentBalance){
-
-                currentBalance -= transactionAmount;
-                fseek(file, 0, SEEK_SET);
-                fprintf(file, "%d", currentBalance);
-                strcpy(response, "Withdrawal Successful");
-            
-            }
-
-            else{
-
-                strcpy(response, "Insufficient balance");
-
-            }
-
-            write(clientSocket, response, BUFFER_SIZE);
+            withdraw(clientSocket, file, &currentBalance);
             break;
 
         case 2:
-
-            read(clientSocket, &transactionAmount, sizeof(int));
-            currentBalance += transactionAmount;
-            fseek(file, 0, SEEK_SET);
-            fprintf(file, "%d", currentBalance);
-            strcpy(response, "Deposit successful");
-            write(clientSocket, response, BUFFER_SIZE);
+            deposit(clientSocket, file, &currentBalance);
             break;
 
         case 3:
-
             write(clientSocket, &currentBalance, sizeof(int));
             break;
 
         default:
-
-            strcpy(response, "Invalid Operation");
+            char response[BUFFER_SIZE] = "Invalid Operation";
             write(clientSocket, response, BUFFER_SIZE);
     }
 
