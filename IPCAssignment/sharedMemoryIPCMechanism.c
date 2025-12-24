@@ -3,33 +3,9 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <unistd.h>
+#include "utilities.h"
 
 #define MAX_SIZE 100
-
-void sort(int array[], int size){
-
-    int temporary;
-    for(int i = 0; i< size-1; i++){
-        for(int j = 0; j < size - i - 1; j++){
-            if(array[j] > array[j+1]){
-                temporary = array[j];
-                array[j] = array[j+1];
-                array[j+1] = temporary;
-            }
-        }
-    }
-    
-}
-
-void displayArray(int *array, int size){
-
-    for(int i = 0; i < size; i++){
-        printf("%d ", array[i]);
-    }
-    printf("\n");
-
-}
-
 
 int main(){
 
@@ -51,7 +27,7 @@ int main(){
 
     if(fork() == 0){  //child process
 
-        sort(&sharedMemeory[1], sharedMemeory[0]);
+        sortArray(&sharedMemeory[1], sharedMemeory[0]);
         shmdt(sharedMemeory);
 
     }
